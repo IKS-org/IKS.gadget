@@ -8,7 +8,7 @@ class IKSGadget {
     }
 
     // 利用条件を調べる
-    async check(){
+    async agreement(){
         this.approval = confirm( "このツールでは駅メモ! Our-Rails利用規約に抵触する行為を行います\nツールの実行を開始してもよろしいですか" );
         this.userInfo = await this.getUserInfo();
         this.userToken = this.getCSRFToken();
@@ -19,43 +19,13 @@ class IKSGadget {
     // main
     async main(){
 
-        await this.check();
+        await this.agreement();
         if ( this.approval !== true || !this.userInfo.contents.owner.platform.id.length || !this.userToken.length ){
             alert( "利用条件を満たしていません。" );
             return -1;
         }
 
-        // 東京駅を起点に近い駅にアクセスしていく
-        let point = {lng: 139.766103, lat: 35.681391};
-
-        const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
-        const coords = list.map((e)=>{ return e.coord });
-
-        const max = coords.length;
-        for( let i=0; i<max; i++ ){
-            let res = searchNearestPoint( point, coords, list );
-            console.log(res);
-            for(let j=0;j<coords.length;j++){
-                if(coords[j].lat == res.lat && coords[j].lng == res.lng){
-                    coords.splice(j, 1)
-                }
-            }
-            //駅名表示
-            list.forEach((s)=>{
-                if(s.coord.lat == res.lat && s.coord.lng == res.lng){
-                    console.log(s);
-                }
-            })
-            point.lng = res.lng;
-            point.lat = res.lat;
-
-            // checkin
-            let cInRes = null;
-            do{
-                cInRes = await this.checkin({lat:res.lat, lng:res.lng}, this.form[Math.floor(Math.random() * 5)]); //TODO:編成数に応じて乱数の幅を変更する
-                await this.delay(res.distance*3000);
-            }while(!cInRes.contents)
-        }
+        this.checkinAtNearest( {lng: 139.766103, lat: 35.681391} );
     }
 
     /*
@@ -123,6 +93,33 @@ class IKSGadget {
         return this.ourFetch(uri + getURIstr(Param), { method:'POST' }).then(res=>res.json());
     }
 
+    // 指定座標の最寄り駅に連鎖的にチェックイン
+    async checkinAtNearest( origin ){
+
+        let point = origin;
+
+        const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
+        const coords = list.map((e)=>{ return e.coord });
+
+        const max = coords.length;
+        for( let i=0; i<max; i++ ){
+            let res = searchNearestPoint( point, coords );
+            coords.splice(res.index, 1)
+
+            // checkin
+            let cInRes = null;
+            do{
+                cInRes = await this.checkin({lat:res.lat, lng:res.lng}, this.form[ getRandInt(5) ]); //TODO:編成数に応じて乱数の幅を変更する
+                await this.delay(res.distance*3000);
+            }while(!cInRes.contents)
+
+            point.lng = res.lng;
+            point.lat = res.lat;
+        }
+    }
+
+
+
 }
 
 function getURIstr(params){
@@ -153,14 +150,13 @@ function mergeDeeply(target, source, opts) {
     return result;
 }
 
-function searchNearestPoint( coord, list, sta ){
+function searchNearestPoint( coord, list ){
     const nearest = {
         lng : 180,
         lat : 180,
         index : -1,
         distance : 180
     };
-
 
     list.forEach((e, index)=>{
         distance = Math.max( Math.sqrt(Math.abs(e.lng - coord.lng) * Math.abs(e.lat - coord.lat)), Math.abs(e.lng - coord.lng), Math.abs(e.lat - coord.lat));
@@ -173,6 +169,10 @@ function searchNearestPoint( coord, list, sta ){
     });
 
     return nearest;
+}
+
+function getRandInt( max ){
+    return Math.floor(Math.random() * max);
 }
 
 (async()=>{
