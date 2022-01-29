@@ -264,8 +264,8 @@ function getRandInt( max ){
 function coordTrick( coord ){
     const sign = [1, -1];
     return {
-        lat : coord.lat + ( Math.Random() / 1000 * sign[getRandInt(2)],
-        lng : coord.lng + ( Math.Random() / 1000 * sign[getRandInt(2)]
+        lat : coord.lat + ( Math.Random() / 1000 * sign[getRandInt(2)]),
+        lng : coord.lng + ( Math.Random() / 1000 * sign[getRandInt(2)])
     };
 }
 
