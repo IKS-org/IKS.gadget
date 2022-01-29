@@ -124,6 +124,41 @@ class IKSGadget {
         return this.ourFetch(uri + getURIstr(Param)).then(res=>res.json());
     };
 
+    // 編成 設定
+    setFormation(formation){
+        const time = (new Date()).getTime();
+        const uri = "https://game.our-rails.ekimemo.com/api/my/slots";
+
+        const Param = {
+            __t : time,
+            __os_id : this.userInfo.contents.owner.platform.id,
+            fields : 'hp,name_en,linked_stations,dress,theme_color'
+        };
+
+        const body = {
+            formation : formation
+        };
+
+        return this.ourFetch(uri + getURIstr(Param), { method:'POST', body:JSON.stringify(body) }).then(res=>res.json());
+    }
+
+    // ふくびき
+    pullLottery(){
+        const time = (new Date()).getTime();
+        const uri = "https://game.our-rails.ekimemo.com/api/actions/daily_mission/lottery_box/lot";
+        const Param = {
+            __t : time,
+            __os_id : this.userInfo.contents.owner.platform.id
+        };
+
+        const body = {
+            lottery_box_id : 1
+        };
+
+        return this.ourFetch(uri + getURIstr(Param), { method:'POST', body:JSON.stringify(body) }).then(res=>res.json());
+
+    }
+
     // HP 自動回復
     autoRevovery(){
         return setInterval(()=>{
