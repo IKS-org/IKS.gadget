@@ -9,7 +9,7 @@ class IKSGadget {
 
     // 利用条件を調べる
     async agreement(){
-        this.approval = confirm( "このツールでは駅メモ! Our-Rails利用規約に抵触する行為を行います\nツールの実行を開始してもよろしいですか" );
+        //this.approval = confirm( "このツールでは駅メモ! Our-Rails利用規約に抵触する行為を行います\nツールの実行を開始してもよろしいですか" );
         this.userInfo = await this.getUserInfo();
         this.userToken = this.getCSRFToken();
 
@@ -91,7 +91,51 @@ class IKSGadget {
         }
 
         return this.ourFetch(uri + getURIstr(Param), { method:'POST' }).then(res=>res.json());
-    }
+    };
+
+    // HP 全回復
+    fullRecovery( dencoh ){
+        const time = (new Date()).getTime();
+        const uri = "https://game.our-rails.ekimemo.com/api/actions/partner/full_recovery";
+
+        const Param = {
+            __t : time,
+            __os_id : this.userInfo.contents.owner.platform.id
+        };
+
+        const body = {
+            target_name_en : dencoh
+        };
+
+        return this.ourFetch(uri + getURIstr(Param), { method:'POST', body:JSON.stringify(body) }).then(res=>res.json());
+    };
+
+    // 編成 取得
+    getFormation(){
+        const time = (new Date()).getTime();
+        const uri = "https://game.our-rails.ekimemo.com/api/my/slots";
+
+        const Param = {
+            __t : time,
+            __os_id : this.userInfo.contents.owner.platform.id,
+            fields : 'hp,name_en,linked_stations,dress,theme_color'
+        };
+
+        return this.ourFetch(uri + getURIstr(Param)).then(res=>res.json());
+    };
+
+    // HP 自動回復
+    autoRevovery(){
+        return setInterval(()=>{
+            this.getFormation().then((res)=>{
+                res.contents.forEach((e)=>{
+                    if (e.hp.current < e.hp.max){
+                        this.fullRecovery( e.name_en );
+                    }
+                })
+            });
+        }, 1000)
+    };
 
     // 指定座標の最寄り駅に連鎖的にチェックイン
     async checkinAtNearest( origin ){
@@ -109,7 +153,8 @@ class IKSGadget {
             // checkin
             let cInRes = null;
             do{
-                cInRes = await this.checkin({lat:res.lat, lng:res.lng}, this.form[ getRandInt(5) ]); //TODO:編成数に応じて乱数の幅を変更する
+                this.form = await this.getFormation().contents;
+                cInRes = await this.checkin({lat:res.lat, lng:res.lng}, this.form[ getRandInt(this.form.length) ]);
                 await this.delay(res.distance*3000);
             }while(!cInRes.contents)
 
@@ -117,9 +162,6 @@ class IKSGadget {
             point.lat = res.lat;
         }
     }
-
-
-
 }
 
 function getURIstr(params){
@@ -177,5 +219,6 @@ function getRandInt( max ){
 
 (async()=>{
     const IKS = new IKSGadget();
-    IKS.main();
+    await IKS.agreement();
+    IKS.autoRevovery();
 })();
