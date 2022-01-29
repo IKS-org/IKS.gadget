@@ -4,12 +4,17 @@ class IKSGadget {
         this.approval = false;
         this.userInfo = {};
         this.userToken = {};
-        this.form = ["naru", "luna", "subaru", "mei", "nagisa"]; // TODO:編成はAPIで取得する
+        this.form = [];
+
+        //内部用関数の実行状況
+        this.checkinState = {};
+        this.waiting = 0.0;
+        this.recoveryState = 0;
     }
 
     // 利用条件を調べる
     async agreement(){
-        //this.approval = confirm( "このツールでは駅メモ! Our-Rails利用規約に抵触する行為を行います\nツールの実行を開始してもよろしいですか" );
+        this.approval = confirm( "このツールでは駅メモ! Our-Rails利用規約に抵触する行為を行います\nツールの実行を開始してもよろしいですか" );
         this.userInfo = await this.getUserInfo();
         this.userToken = this.getCSRFToken();
 
@@ -24,14 +29,13 @@ class IKSGadget {
             alert( "利用条件を満たしていません。" );
             return -1;
         }
-
-        this.checkinAtNearest( {lng: 139.766103, lat: 35.681391} );
     }
 
     /*
      * 内部用関数
      */
     delay(n){
+        this.waiting = n;
         return new Promise(function(resolve){
             setTimeout(resolve,n*1000);
         });
@@ -90,7 +94,8 @@ class IKSGadget {
             time : Math.floor(time/1000),
         }
 
-        return this.ourFetch(uri + getURIstr(Param), { method:'POST' }).then(res=>res.json());
+        this.checkinState = this.ourFetch(uri + getURIstr(Param), { method:'POST' }).then(res=>res.json());
+        return this.checkinState;
     };
 
     // HP 全回復
@@ -160,8 +165,8 @@ class IKSGadget {
     }
 
     // HP 自動回復
-    autoRevovery(){
-        return setInterval(()=>{
+    autoRecovery(){
+        this.recoveryState = setInterval(()=>{
             this.getFormation().then((res)=>{
                 res.contents.forEach((e)=>{
                     if (e.hp.current < e.hp.max){
@@ -172,24 +177,28 @@ class IKSGadget {
         }, 1000)
     };
 
+    // HP 自動回復 停止
+    stopRecovery(){
+        clearInterval( this.recoveryState );
+        this.recoveryState = 0;
+        return 0;
+    }
+
     // 指定座標の最寄り駅に連鎖的にチェックイン
-    async checkinAtNearest( origin ){
+    async checkinAtNearest( origin, list ){
 
         let point = origin;
 
-        const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
-        const coords = list.map((e)=>{ return e.coord });
-
-        const max = coords.length;
+        const max = list.length;
         for( let i=0; i<max; i++ ){
-            let res = searchNearestPoint( point, coords );
-            coords.splice(res.index, 1)
+            let res = searchNearestPoint( point, list );
+            list.splice(res.index, 1)
 
             // checkin
             let cInRes = null;
             do{
-                this.form = await this.getFormation().contents;
-                cInRes = await this.checkin({lat:res.lat, lng:res.lng}, this.form[ getRandInt(this.form.length) ]);
+                this.form = (await this.getFormation()).contents;
+                cInRes = await this.checkin(coordTrick({lat:res.lat, lng:res.lng}), this.form[ getRandInt(this.form.length) ].name_en);
                 await this.delay(res.distance*3000);
             }while(!cInRes.contents)
 
@@ -252,8 +261,29 @@ function getRandInt( max ){
     return Math.floor(Math.random() * max);
 }
 
+function coordTrick( coord ){
+    const sign = [1, -1];
+    return {
+        lat : coord.lat + ( Math.Random() / 1000 * sign[getRandInt(2)],
+        lng : coord.lng + ( Math.Random() / 1000 * sign[getRandInt(2)]
+    };
+}
+
 (async()=>{
-    const IKS = new IKSGadget();
-    await IKS.agreement();
-    IKS.autoRevovery();
+    const iks = new IKSGadget();
+    const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
+    const coords = list.map((e)=>{ return e.coord });
+
+    const start = {lng: 139.738477, lat: 35.752164};
+
+    let res = {};
+    while(true){
+        let res = searchNearestPoint( start, coords );
+        coords.splice(res.index, 1);
+        if(  res.lng == 140.051656 && res.lat == 36.666495 ) break;
+    }
+
+    await iks.agreement();
+    this.checkinAtNearest( coordTrick({"lng": 140.051656, "lat": 36.666495}), coords );
+
 })();
