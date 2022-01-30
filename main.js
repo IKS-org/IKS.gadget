@@ -199,7 +199,7 @@ class IKSGadget {
             do{
                 this.form = (await this.getFormation()).contents;
                 cInRes = await this.checkin(coordTrick({lat:res.lat, lng:res.lng}), this.form[ getRandInt(this.form.length) ].name_en);
-                await this.delay(res.distance*3000);
+                await this.delay(res.distance*2300);
             }while(!cInRes.contents)
 
             point.lng = res.lng;
@@ -264,8 +264,8 @@ function getRandInt( max ){
 function coordTrick( coord ){
     const sign = [1, -1];
     return {
-        lat : coord.lat + ( Math.Random() / 1000 * sign[getRandInt(2)]),
-        lng : coord.lng + ( Math.Random() / 1000 * sign[getRandInt(2)])
+        lat : coord.lat + ( Math.random() / 1000 * sign[getRandInt(2)]),
+        lng : coord.lng + ( Math.random() / 1000 * sign[getRandInt(2)])
     };
 }
 
@@ -275,15 +275,17 @@ function coordTrick( coord ){
     const coords = list.map((e)=>{ return e.coord });
 
     const start = {lng: 139.738477, lat: 35.752164};
+    const breakpoint = { lng: 138.853927, lat: 37.447787 }
 
     let res = {};
     while(true){
         let res = searchNearestPoint( start, coords );
         coords.splice(res.index, 1);
-        if(  res.lng == 140.051656 && res.lat == 36.666495 ) break;
+        if(  res.lng == breakpoint.lng && res.lat == breakpoint.lat ) break;
+
     }
 
     await iks.agreement();
-    this.checkinAtNearest( coordTrick({"lng": 140.051656, "lat": 36.666495}), coords );
+    iks.checkinAtNearest( coordTrick(breakpoint), coords );
 
 })();
