@@ -36,7 +36,7 @@ function getRandInt( max ){
     const module = await import("https://cdn.jsdelivr.net/gh/IKS-org/IKS.gadget@develop/IKS.gadget.js");
     const iks = new module.IKSGadget();
 
-    const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
+    const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json").then(r=>r.json());
     const coords = list.map((e)=>{ return e.coord });
 
     const start = {lng: 139.738477, lat: 35.752164};
