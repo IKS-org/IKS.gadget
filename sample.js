@@ -1,5 +1,3 @@
-import IKSGadget from './IKS.gadget';
-
 function searchNearestPoint( coord, list ){
     const nearest = {
         lng : 180,
@@ -35,14 +33,15 @@ function getRandInt( max ){
 
 (async()=>{
 
-    const iks = new IKSGadget();
+    const module = await import("https://cdn.jsdelivr.net/gh/IKS-org/IKS.gadget@develop/IKS.gadget.js");
+    const iks = new module.IKSGadget();
+
     const list = await fetch("https://raw.githubusercontent.com/IKS-org/IKS.gadget/develop/coords.json?token=GHSAT0AAAAAABQK5Q3BTOMMBIKLOJNNDXW6YP5KVEA").then(r=>r.json());
     const coords = list.map((e)=>{ return e.coord });
 
     const start = {lng: 139.738477, lat: 35.752164};
     const breakpoint = { lng: 138.853927, lat: 37.447787 }
 
-    let res = {};
     while(true){
         let res = searchNearestPoint( start, coords );
         coords.splice(res.index, 1);
