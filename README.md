@@ -14,23 +14,23 @@
 
 ## methods
 ### getUserInfo()
-ユーザ情報を取得する
+ユーザ情報を取得する  
 
 ### checkin( coord, dencoh )
-チェックインを実行する
+チェックインを実行する  
 `coord` : `{ lat: <Number>, lng: <Number> }`でチェックインする座標を渡す。  
 `dencoh` : チェックインするでんこの名前を文字列で渡す。編成外のでんこを指定すると500エラーとなる。  
 
 ### fullRecovery( denoh )
-HPを全回復する
+HPを全回復する  
 `dencoh` : HP回復するでんこの名前を文字列で渡す。編成外のでんこを指定すると500エラーとなる。  
 
 ### getFormation()
-編成を取得する
+編成を取得する  
 
 ### setFormation( formation )
-編成を変更する
-`formation` : `getFormation`で得られる形式の配列
+編成を変更する  
+`formation` : `getFormation`で得られる形式の配列  
 
 ### pullLottery()
-ふくびきを1回引く
+ふくびきを1回引く  
